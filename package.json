@@ -7,6 +7,6 @@
     "dev": "pnpm --filter @novaglow/web dev"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["esbuild", "sharp"]
+    "onlyBuiltDependencies": ["@napi-rs/canvas", "esbuild", "sharp"]
   }
 }
