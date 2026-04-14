@@ -1,2 +1,10 @@
-// Core exports will be added as modules are implemented
-export {}
+export { render, sampleCell, findBestCharacter } from './renderer.js'
+export { precomputeShapeVectors, makeSamplingCircles, sampleCircleOverlap, computeShapeVector, normalizeVectors } from './shape-vectors.js'
+export { enhanceContrast } from './contrast.js'
+export { CHARSETS } from './charsets.js'
+export { PRESETS } from './presets.js'
+export { renderToSvg } from './encoders/svg.js'
+export { renderToHtml } from './encoders/html.js'
+export type { RenderOptions, RenderResult, CellResult, Preset, ShapeVector, CharShape, ImageData, GrayscaleBitmap } from './types.js'
+export type { SvgOptions } from './encoders/svg.js'
+export type { HtmlOptions } from './encoders/html.js'
