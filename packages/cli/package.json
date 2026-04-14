@@ -1,0 +1,22 @@
+{
+  "name": "@novaglow/cli",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "novaglow": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts",
+    "dev": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "@novaglow/core": "workspace:*",
+    "commander": "^13.0.0",
+    "sharp": "^0.33.0"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.4.0"
+  }
+}
