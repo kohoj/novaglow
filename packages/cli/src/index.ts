@@ -74,6 +74,52 @@ program
     const charShapes = getCharShapes(charsetName, opts.chars)
     console.log(`Ready (${charShapes.length} characters)`)
 
+    const VIDEO_EXTS = ['.mp4', '.avi', '.mov', '.mkv', '.webm', '.flv', '.wmv']
+    const ext = extname(input).toLowerCase()
+
+    if (VIDEO_EXTS.includes(ext)) {
+      const { extractFrames, composeMp4, cleanupFrames } = await import('./video.js')
+      const { mkdtemp } = await import('node:fs/promises')
+      const { tmpdir } = await import('node:os')
+      const { join } = await import('node:path')
+
+      const fps = parseInt(opts.fps ?? '10', 10)
+      const outputPath = opts.output ?? input.replace(/\.[^.]+$/, '-novaglow.mp4')
+
+      console.log('Extracting frames...')
+      const { framesDir, frameCount } = await extractFrames(input, fps)
+      console.log(`${frameCount} frames extracted`)
+
+      const renderedDir = await mkdtemp(join(tmpdir(), 'novaglow-rendered-'))
+
+      for (let i = 1; i <= frameCount; i++) {
+        const framePath = join(framesDir, `frame-${String(i).padStart(5, '0')}.png`)
+        const image = await loadImage(framePath)
+        const result = render(image, {
+          cols: colsNum,
+          contrast: contrastNum,
+          invert: invertFlag,
+          color: colorFlag,
+          charShapes,
+        })
+        const buf = await renderToImageBuffer(result, {
+          background: preset?.background ?? '#ffffff',
+          defaultColor: preset?.color ?? '#000000',
+        })
+        const outFrame = join(renderedDir, `frame-${String(i).padStart(5, '0')}.png`)
+        await writeFile(outFrame, buf)
+        process.stdout.write(`\rRendering: ${i}/${frameCount}`)
+      }
+      console.log('')
+
+      console.log('Composing MP4...')
+      await composeMp4(renderedDir, outputPath, fps)
+      await cleanupFrames(framesDir)
+      await cleanupFrames(renderedDir)
+      console.log(`Written to ${outputPath}`)
+      return
+    }
+
     const stats = await stat(input)
     if (stats.isDirectory()) {
       const files = await readdir(input)
