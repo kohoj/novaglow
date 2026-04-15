@@ -34,16 +34,19 @@ export function sampleCircleOverlap(
   const xMax = Math.min(width, Math.ceil(cx + radius) + 1)
 
   let total = 0
-  let lit = 0
+  let ink = 0
   for (let y = yMin; y < yMax; y++) {
     for (let x = xMin; x < xMax; x++) {
       if ((x - cx) ** 2 + (y - cy) ** 2 <= r2) {
         total++
-        lit += data[y * width + x]
+        // data stores brightness (white=1, black=0); convert to ink density
+        // so dense character strokes produce high values, matching renderer's
+        // darkness measurement.
+        ink += 1.0 - data[y * width + x]
       }
     }
   }
-  return total > 0 ? lit / total : 0
+  return total > 0 ? ink / total : 0
 }
 
 export function computeShapeVector(
@@ -104,7 +107,7 @@ export function precomputeShapeVectors(
     validChars.push(char)
   }
 
-  const normalized = normalizeVectors(rawVectors)
+  const normalized = normalizeVectors(rawVectors, true)
 
   return validChars.map((char, i) => ({ char, vector: normalized[i] }))
 }

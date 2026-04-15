@@ -27,7 +27,9 @@ export function DropZone({ onFile }: DropZoneProps) {
       e.preventDefault()
       setIsDragging(false)
       const file = e.dataTransfer.files[0]
-      if (file) onFile(file)
+      if (file && (file.type.startsWith('image/') || file.type.startsWith('video/'))) {
+        onFile(file)
+      }
     },
     [onFile],
   )

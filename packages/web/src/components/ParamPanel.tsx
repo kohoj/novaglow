@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, memo } from 'react'
 
 interface Props {
   cols: number
@@ -11,7 +11,7 @@ interface Props {
   setCustomChars: (v: string) => void
 }
 
-export function ParamPanel(props: Props) {
+export const ParamPanel = memo(function ParamPanel(props: Props) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -86,4 +86,4 @@ export function ParamPanel(props: Props) {
       </div>
     </>
   )
-}
+})

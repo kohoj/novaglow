@@ -138,24 +138,25 @@ export function render(image: ImageData, options: RenderOptions = {}): RenderRes
       let cellColor: [number, number, number] | null = null
       if (color) {
         const x0 = Math.floor(cx)
-        const x1 = Math.min(Math.floor(cx + cellW), width)
+        const x1 = Math.min(Math.ceil(cx + cellW), width)
         const y0 = Math.floor(cy)
-        const y1 = Math.min(Math.floor(cy + cellH), height)
-        let rSum = 0, gSum = 0, bSum = 0, pxCount = 0
+        const y1 = Math.min(Math.ceil(cy + cellH), height)
+        let rSum = 0, gSum = 0, bSum = 0, aSum = 0
         for (let y = y0; y < y1; y++) {
           for (let x = x0; x < x1; x++) {
             const idx = (y * width + x) * 4
-            rSum += data[idx]
-            gSum += data[idx + 1]
-            bSum += data[idx + 2]
-            pxCount++
+            const a = data[idx + 3] / 255
+            rSum += data[idx] * a
+            gSum += data[idx + 1] * a
+            bSum += data[idx + 2] * a
+            aSum += a
           }
         }
-        if (pxCount > 0) {
+        if (aSum > 0) {
           cellColor = [
-            Math.round(rSum / pxCount),
-            Math.round(gSum / pxCount),
-            Math.round(bSum / pxCount),
+            Math.round(rSum / aSum),
+            Math.round(gSum / aSum),
+            Math.round(bSum / aSum),
           ]
         }
       }

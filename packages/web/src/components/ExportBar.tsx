@@ -1,8 +1,11 @@
+import { memo } from 'react'
 import { renderToSvg, renderToHtml, PRESETS, type RenderResult } from '@novaglow/core'
+import type { AsciiCanvasHandle } from './AsciiCanvas'
 
 interface Props {
   result: RenderResult
   preset: string
+  canvasRef: React.RefObject<AsciiCanvasHandle | null>
 }
 
 function download(content: string | Blob, filename: string) {
@@ -12,10 +15,10 @@ function download(content: string | Blob, filename: string) {
   a.href = url
   a.download = filename
   a.click()
-  URL.revokeObjectURL(url)
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
-export function ExportBar({ result, preset }: Props) {
+export const ExportBar = memo(function ExportBar({ result, preset, canvasRef }: Props) {
   const p = PRESETS[preset]
   const bg = p?.background ?? '#ffffff'
   const fg = p?.color ?? '#000000'
@@ -31,7 +34,7 @@ export function ExportBar({ result, preset }: Props) {
   }
 
   const exportPng = () => {
-    const canvas = document.querySelector('canvas')
+    const canvas = canvasRef.current?.getCanvas()
     if (!canvas) return
     canvas.toBlob((blob) => {
       if (blob) download(blob, 'novaglow.png')
@@ -51,4 +54,4 @@ export function ExportBar({ result, preset }: Props) {
       </button>
     </div>
   )
-}
+})

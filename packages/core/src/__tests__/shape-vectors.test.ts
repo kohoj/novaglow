@@ -27,22 +27,24 @@ describe('makeSamplingCircles', () => {
 })
 
 describe('sampleCircleOverlap', () => {
-  it('returns 0 for blank bitmap', () => {
+  it('returns 1 (full ink) for all-black bitmap', () => {
+    // data=0 means brightness=0 (black), so ink density = 1.0 - 0.0 = 1.0
     const bitmap: GrayscaleBitmap = {
       data: new Float32Array(100),
       width: 10,
       height: 10,
     }
     const result = sampleCircleOverlap(bitmap, 5, 5, 3)
-    expect(result).toBe(0)
+    expect(result).toBe(1)
   })
 
-  it('returns 1 for fully lit bitmap', () => {
+  it('returns 0 (no ink) for all-white bitmap', () => {
+    // data=1 means brightness=1 (white), so ink density = 1.0 - 1.0 = 0.0
     const data = new Float32Array(100)
     data.fill(1.0)
     const bitmap: GrayscaleBitmap = { data, width: 10, height: 10 }
     const result = sampleCircleOverlap(bitmap, 5, 5, 3)
-    expect(result).toBeCloseTo(1.0, 1)
+    expect(result).toBeCloseTo(0.0, 1)
   })
 })
 

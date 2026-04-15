@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 import { program } from 'commander'
-import { writeFile, stat, readdir } from 'node:fs/promises'
-import { extname, join } from 'node:path'
+import { writeFile, stat, readdir, mkdtemp } from 'node:fs/promises'
+import { extname, join, basename } from 'node:path'
+import { tmpdir } from 'node:os'
 import sharp from 'sharp'
 import {
   render,
@@ -41,8 +42,19 @@ function detectFormat(outputPath: string): string {
   const map: Record<string, string> = {
     '.svg': 'svg', '.html': 'html', '.htm': 'html',
     '.png': 'png', '.jpg': 'jpeg', '.jpeg': 'jpeg',
+    '.mp4': 'mp4',
   }
   return map[ext] ?? 'png'
+}
+
+/** Generate a safe default output path, avoiding overwrite when input has no extension */
+function defaultOutputPath(inputPath: string, suffix: string): string {
+  const replaced = inputPath.replace(/\.[^.]+$/, suffix)
+  // If no extension was found, the regex didn't match and replaced === inputPath
+  if (replaced === inputPath) {
+    return inputPath + suffix
+  }
+  return replaced
 }
 
 program
@@ -79,6 +91,15 @@ program
       process.exit(1)
     }
 
+    // Validate input exists before expensive precomputation
+    let inputStats: Awaited<ReturnType<typeof stat>>
+    try {
+      inputStats = await stat(input)
+    } catch {
+      console.error(`Error: input path not found: ${input}`)
+      process.exit(1)
+    }
+
     console.log('Precomputing character shapes...')
     const charShapes = getCharShapes(charsetName, opts.chars)
     console.log(`Ready (${charShapes.length} characters)`)
@@ -88,57 +109,72 @@ program
 
     if (VIDEO_EXTS.includes(ext)) {
       const { extractFrames, composeMp4, cleanupFrames } = await import('./video.js')
-      const { mkdtemp } = await import('node:fs/promises')
-      const { tmpdir } = await import('node:os')
-      const { join } = await import('node:path')
 
       const fps = parseInt(opts.fps ?? '10', 10)
-      const outputPath = opts.output ?? input.replace(/\.[^.]+$/, '-novaglow.mp4')
-
-      console.log('Extracting frames...')
-      const { framesDir, frameCount } = await extractFrames(input, fps)
-      console.log(`${frameCount} frames extracted`)
-
-      const renderedDir = await mkdtemp(join(tmpdir(), 'novaglow-rendered-'))
-
-      for (let i = 1; i <= frameCount; i++) {
-        const framePath = join(framesDir, `frame-${String(i).padStart(5, '0')}.png`)
-        const image = await loadImage(framePath)
-        const result = render(image, {
-          cols: colsNum,
-          contrast: contrastNum,
-          invert: invertFlag,
-          color: colorFlag,
-          charShapes,
-        })
-        const buf = await renderToImageBuffer(result, {
-          background: preset?.background ?? '#ffffff',
-          defaultColor: preset?.color ?? '#000000',
-        })
-        const outFrame = join(renderedDir, `frame-${String(i).padStart(5, '0')}.png`)
-        await writeFile(outFrame, buf)
-        process.stdout.write(`\rRendering: ${i}/${frameCount}`)
+      if (!Number.isFinite(fps) || fps < 1) {
+        console.error('Error: --fps must be a positive integer')
+        process.exit(1)
       }
-      console.log('')
+      const outputPath = opts.output ?? defaultOutputPath(input, '-novaglow.mp4')
 
-      console.log('Composing MP4...')
-      await composeMp4(renderedDir, outputPath, fps)
-      await cleanupFrames(framesDir)
-      await cleanupFrames(renderedDir)
-      console.log(`Written to ${outputPath}`)
+      let framesDir: string | undefined
+      let renderedDir: string | undefined
+      try {
+        console.log('Extracting frames...')
+        const extracted = await extractFrames(input, fps)
+        framesDir = extracted.framesDir
+        const frameCount = extracted.frameCount
+        console.log(`${frameCount} frames extracted`)
+
+        renderedDir = await mkdtemp(join(tmpdir(), 'novaglow-rendered-'))
+
+        for (let i = 1; i <= frameCount; i++) {
+          const framePath = join(framesDir, `frame-${String(i).padStart(5, '0')}.png`)
+          const image = await loadImage(framePath)
+          const result = render(image, {
+            cols: colsNum,
+            contrast: contrastNum,
+            invert: invertFlag,
+            color: colorFlag,
+            charShapes,
+          })
+          const buf = await renderToImageBuffer(result, {
+            background: preset?.background ?? '#ffffff',
+            defaultColor: preset?.color ?? '#000000',
+          })
+          const outFrame = join(renderedDir, `frame-${String(i).padStart(5, '0')}.png`)
+          await writeFile(outFrame, buf)
+          process.stdout.write(`\rRendering: ${i}/${frameCount}`)
+        }
+        console.log('')
+
+        console.log('Composing MP4...')
+        await composeMp4(renderedDir, outputPath, fps)
+        console.log(`Written to ${outputPath}`)
+      } finally {
+        if (framesDir) await cleanupFrames(framesDir).catch(() => {})
+        if (renderedDir) await cleanupFrames(renderedDir).catch(() => {})
+      }
       return
     }
 
-    const stats = await stat(input)
-    if (stats.isDirectory()) {
+    if (inputStats.isDirectory()) {
       const files = await readdir(input)
       const imageFiles = files.filter((f) =>
         /\.(png|jpe?g|webp|tiff?|bmp)$/i.test(f),
       )
+      if (imageFiles.length === 0) {
+        console.log('No image files found in directory')
+        return
+      }
       const outDir = opts.output ?? input
       for (const file of imageFiles) {
-        const outPath = join(outDir, file.replace(/\.[^.]+$/, '-novaglow.png'))
-        await renderSingle(join(input, file), outPath, colsNum, contrastNum, invertFlag, colorFlag, preset, charShapes)
+        const outPath = join(outDir, defaultOutputPath(basename(file), '-novaglow.png'))
+        try {
+          await renderSingle(join(input, file), outPath, colsNum, contrastNum, invertFlag, colorFlag, preset, charShapes)
+        } catch (e) {
+          console.error(`Error processing ${file}: ${e instanceof Error ? e.message : e}`)
+        }
       }
     } else {
       await renderSingle(input, opts.output, colsNum, contrastNum, invertFlag, colorFlag, preset, charShapes)
@@ -191,7 +227,7 @@ async function renderSingle(
     await writeFile(outputPath, output)
     console.log(`Written to ${outputPath}`)
   } else {
-    const defaultOut = inputPath.replace(/\.[^.]+$/, '-novaglow.png')
+    const defaultOut = defaultOutputPath(inputPath, '-novaglow.png')
     await writeFile(defaultOut, output)
     console.log(`Written to ${defaultOut}`)
   }

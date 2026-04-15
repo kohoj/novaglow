@@ -1,12 +1,15 @@
+import { useRef } from 'react'
 import { DropZone } from './components/DropZone'
 import { useRenderer } from './hooks/useRenderer'
-import { AsciiCanvas } from './components/AsciiCanvas'
+import { AsciiCanvas, type AsciiCanvasHandle } from './components/AsciiCanvas'
 import { PresetBar } from './components/PresetBar'
 import { ParamPanel } from './components/ParamPanel'
 import { ExportBar } from './components/ExportBar'
+import { VideoControls } from './components/VideoControls'
 
 export default function App() {
   const renderer = useRenderer()
+  const canvasRef = useRef<AsciiCanvasHandle>(null)
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -18,7 +21,7 @@ export default function App() {
 
       <main className="flex-1 flex items-center justify-center px-8 pb-24">
         {renderer.result ? (
-          <AsciiCanvas result={renderer.result} preset={renderer.presetName} />
+          <AsciiCanvas ref={canvasRef} result={renderer.result} preset={renderer.presetName} />
         ) : (
           <DropZone onFile={renderer.loadFile} />
         )}
@@ -26,6 +29,16 @@ export default function App() {
 
       {renderer.result && (
         <>
+          {renderer.isVideo && (
+            <VideoControls
+              playing={renderer.playing}
+              duration={renderer.videoDuration}
+              videoTimeRef={renderer.videoTimeRef}
+              onVideoTimeUpdateRef={renderer.onVideoTimeUpdateRef}
+              onTogglePlay={renderer.togglePlay}
+              onSeek={renderer.seekVideo}
+            />
+          )}
           <ParamPanel
             cols={renderer.cols}
             setCols={renderer.setCols}
@@ -36,11 +49,12 @@ export default function App() {
             customChars={renderer.customChars}
             setCustomChars={renderer.setCustomChars}
           />
-          <ExportBar result={renderer.result} preset={renderer.presetName} />
+          <ExportBar result={renderer.result} preset={renderer.presetName} canvasRef={canvasRef} />
           <PresetBar
             current={renderer.presetName}
             onChange={renderer.setPresetName}
             onNewFile={renderer.loadFile}
+            onReset={renderer.reset}
           />
         </>
       )}

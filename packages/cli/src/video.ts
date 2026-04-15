@@ -16,9 +16,8 @@ export async function extractFrames(
   await execFileAsync('ffmpeg', [
     '-i', videoPath,
     '-vf', `fps=${fps}`,
-    '-q:v', '2',
     pattern,
-  ])
+  ], { maxBuffer: 50 * 1024 * 1024 })
 
   const files = await readdir(framesDir)
   const frameFiles = files.filter((f) => f.endsWith('.png')).sort()
@@ -41,7 +40,7 @@ export async function composeMp4(
     '-pix_fmt', 'yuv420p',
     '-crf', '18',
     outputPath,
-  ])
+  ], { maxBuffer: 50 * 1024 * 1024 })
 }
 
 export async function cleanupFrames(framesDir: string): Promise<void> {
