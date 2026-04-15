@@ -20,9 +20,10 @@ describe('CHARSETS', () => {
     expect(CHARSETS.blocks).toContain('░')
   })
 
-  it('digits charset has 10 digit characters', () => {
-    expect(CHARSETS.digits).toHaveLength(10)
-    expect(CHARSETS.digits[0]).toBe('0')
-    expect(CHARSETS.digits[9]).toBe('9')
+  it('digits charset has space, dot, and 10 digit characters', () => {
+    expect(CHARSETS.digits).toHaveLength(12)
+    expect(CHARSETS.digits[0]).toBe(' ')
+    expect(CHARSETS.digits[1]).toBe('.')
+    expect(CHARSETS.digits[11]).toBe('9')
   })
 })

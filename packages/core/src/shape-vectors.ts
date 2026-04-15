@@ -55,8 +55,20 @@ export function computeShapeVector(
   ) as ShapeVector
 }
 
-export function normalizeVectors(vectors: ShapeVector[]): ShapeVector[] {
+/**
+ * Normalize vectors per dimension so max = 1.0.
+ * When useAbsoluteScale is true, use a fixed max of 1.0 per dimension
+ * instead of the per-charset max. This preserves the absolute luminance
+ * scale so that changing charsets doesn't change what "1.0" means.
+ */
+export function normalizeVectors(vectors: ShapeVector[], useAbsoluteScale = false): ShapeVector[] {
   if (vectors.length === 0) return []
+
+  if (useAbsoluteScale) {
+    // Raw overlap values are already in [0, 1] — no normalization needed.
+    // This ensures the same image vector matches consistently across charsets.
+    return vectors
+  }
 
   const maxPerDim: number[] = [0, 0, 0, 0, 0, 0]
   for (const vec of vectors) {
@@ -70,6 +82,11 @@ export function normalizeVectors(vectors: ShapeVector[]): ShapeVector[] {
   )
 }
 
+/**
+ * Precompute shape vectors for a charset.
+ * Uses absolute scale (no per-charset normalization) so that
+ * image sampling vectors match consistently regardless of charset size.
+ */
 export function precomputeShapeVectors(
   chars: string[],
   renderCharBitmap: (char: string) => GrayscaleBitmap,

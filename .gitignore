@@ -5,3 +5,5 @@ dist/
 test-output/
 test-cosmos.jpg
 test.jpg
+test-*.png
+test-*.svg

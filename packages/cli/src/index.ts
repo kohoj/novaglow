@@ -21,7 +21,7 @@ async function loadImage(filePath: string): Promise<ImageData> {
     .raw()
     .toBuffer({ resolveWithObject: true })
   return {
-    data: new Uint8ClampedArray(data.buffer),
+    data: new Uint8ClampedArray(data.buffer, data.byteOffset, data.byteLength),
     width: info.width,
     height: info.height,
   }
@@ -62,13 +62,22 @@ program
   .option('--chars <string>', 'Custom character set')
   .option('--fps <number>', 'Video output FPS', '10')
   .action(async (input: string, opts) => {
-    const colsNum = parseInt(opts.cols, 10)
-    const contrastNum = parseFloat(opts.contrast)
-    const invertFlag = opts.invert ?? false
-    const colorFlag = opts.color ?? false
     const presetName = opts.preset
     const preset = PRESETS[presetName]
     const charsetName = preset?.charset ?? 'full'
+    // Apply preset defaults, let CLI flags override
+    const colsNum = opts.cols !== '80' || !preset ? parseInt(opts.cols, 10) : (preset.density ? Math.round(80 * (8 / preset.density)) : parseInt(opts.cols, 10))
+    const contrastNum = opts.contrast !== '0.3' || !preset ? parseFloat(opts.contrast) : preset.contrast
+    const invertFlag = opts.invert ?? preset?.invert ?? false
+    const colorFlag = opts.color ?? false
+    if (!Number.isFinite(colsNum) || colsNum < 1) {
+      console.error('Error: --cols must be a positive integer')
+      process.exit(1)
+    }
+    if (!Number.isFinite(contrastNum) || contrastNum < 0 || contrastNum > 1) {
+      console.error('Error: --contrast must be a number between 0 and 1')
+      process.exit(1)
+    }
 
     console.log('Precomputing character shapes...')
     const charShapes = getCharShapes(charsetName, opts.chars)

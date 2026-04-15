@@ -70,10 +70,12 @@ export function useRenderer() {
       setLoading(true)
       const preset = PRESETS[presetName]
       const charShapes = getCharShapes(preset?.charset ?? 'full', customChars)
+      // Apply preset invert for dark-background presets
+      const effectiveInvert = invert || (preset?.invert ?? false)
       const result = render(imageData, {
         cols,
         contrast,
-        invert,
+        invert: effectiveInvert,
         color: true,
         charShapes,
       })
@@ -110,9 +112,18 @@ export function useRenderer() {
     [doRender],
   )
 
+  const applyPreset = useCallback((name: string) => {
+    setPresetName(name)
+    const p = PRESETS[name]
+    if (p) {
+      setContrast(p.contrast)
+      if (p.density) setCols(Math.round(80 * (8 / p.density)))
+    }
+  }, [])
+
   return {
     result, loading, loadFile,
-    presetName, setPresetName,
+    presetName, setPresetName: applyPreset,
     cols, setCols,
     contrast, setContrast,
     invert, setInvert,

@@ -58,15 +58,24 @@ describe('computeShapeVector', () => {
 })
 
 describe('normalizeVectors', () => {
-  it('normalizes per dimension to [0, 1]', () => {
+  it('normalizes per dimension to [0, 1] in relative mode', () => {
     const vectors: [number, number, number, number, number, number][] = [
       [0.2, 0.4, 0.6, 0.8, 1.0, 0.0],
       [0.4, 0.8, 0.3, 0.4, 0.5, 0.0],
     ]
-    const result = normalizeVectors(vectors)
+    const result = normalizeVectors(vectors, false)
     expect(result[0][0]).toBeCloseTo(0.5, 5)
     expect(result[1][0]).toBeCloseTo(1.0, 5)
     expect(result[0][5]).toBe(0)
     expect(result[1][5]).toBe(0)
+  })
+
+  it('returns vectors unchanged in absolute scale mode', () => {
+    const vectors: [number, number, number, number, number, number][] = [
+      [0.2, 0.4, 0.6, 0.8, 1.0, 0.0],
+      [0.4, 0.8, 0.3, 0.4, 0.5, 0.0],
+    ]
+    const result = normalizeVectors(vectors, true)
+    expect(result).toEqual(vectors)
   })
 })

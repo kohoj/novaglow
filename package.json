@@ -4,7 +4,8 @@
   "scripts": {
     "build": "pnpm -r build",
     "test": "pnpm -r test",
-    "dev": "pnpm --filter @novaglow/web dev"
+    "dev": "pnpm --filter @novaglow/web dev",
+    "cli": "npx tsx packages/cli/src/index.ts"
   },
   "pnpm": {
     "onlyBuiltDependencies": ["@napi-rs/canvas", "esbuild", "sharp"]

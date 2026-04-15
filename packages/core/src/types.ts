@@ -56,4 +56,6 @@ export interface Preset {
   background: string
   contrast: number
   density: number
+  /** Dark-background preset: invert so bright source → dense char */
+  invert?: boolean
 }

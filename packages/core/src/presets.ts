@@ -18,6 +18,7 @@ export const PRESETS: Record<string, Preset> = {
     background: '#0a0a0a',
     contrast: 0.4,
     density: 6,
+    invert: true,
   },
   minimal: {
     name: 'minimal',
@@ -32,9 +33,9 @@ export const PRESETS: Record<string, Preset> = {
     name: 'particle',
     label: 'Particle',
     charset: 'digits',
-    color: '#555555',
+    color: '#333333',
     background: '#ffffff',
-    contrast: 0.5,
-    density: 10,
+    contrast: 0.8,
+    density: 8,
   },
 }
